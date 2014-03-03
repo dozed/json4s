@@ -229,6 +229,30 @@ abstract class ExtractionExamples[T](mod: String) extends Specification with Jso
     "Complex nested non-polymorphic collections extraction example" in {
       parse("""{"a":[{"b":"c"}]}""").extract[Map[String, List[Map[String, String]]]] must_== Map("a" -> List(Map("b" -> "c")))
     }
+
+    "Extraction of single value with custom function" in {
+      parse("""{"name":"john","age":32}""") extract { jv =>
+        val name = (jv \ "name").extract[String]
+        val age = (jv \ "age").extract[Int]
+        (name, age)
+      } must_== ("john", 32)
+    }
+
+    "Extraction of list with custom function" in {
+      parse("""[{"name":"john","age":32}, {"name":"joe","age":23}]""") extractList { jv =>
+        val name = (jv \ "name").extract[String]
+        val age = (jv \ "age").extract[Int]
+        (name, age)
+      } must_== List(("john", 32), ("joe", 23))
+    }
+
+    "Extraction of optional value with custom function" in {
+      parse("""{"name":"john","age":32}""") extractOpt { jv =>
+        val name = (jv \ "name").extract[String]
+        val age = (jv \ "age").extract[Int]
+        Some((name, age))
+      } must_== Some(("john", 32))
+    }
   }
 
   val testJson =

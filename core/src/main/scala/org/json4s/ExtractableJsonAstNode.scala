@@ -106,5 +106,46 @@ class ExtractableJsonAstNode(jv: JValue) {
    */
   def getAsOrElse[A](default: ⇒ A)(implicit reader: Reader[A], mf: Manifest[A]): A =
     getAs(reader, mf) getOrElse default
+
+  /**
+   * Extract a value from a JSON with the given function f.
+   *
+   * Example:<pre>
+   * parse("""{"name":"john","age":32}""") extract { jv =>
+   *   val name = (jv \ "name").extract[String]
+   *   val age = (jv \ "age").extract[Int]
+   *   (name, age)
+   * } == ("john", 32)</pre>
+   */
+  def extract[A](f: JValue => A): A = f(jv)
+
+  /**
+   * Extract a value from a JSON with the given function f.
+   *
+   * Example:<pre>
+   * parse("""{"name":"john","age":32}""") extractOpt { jv =>
+   *   val name = (jv \ "name").extract[String]
+   *   val age = (jv \ "age").extract[Int]
+   *   Some((name, age))
+   * } == Some(("john", 32))</pre>
+   */
+  def extractOpt[A](f: JValue => Option[A]): Option[A] = f(jv)
+
+  /**
+   * Extract a list of values from a JSON with the given function f, if the value is a JArray.
+   * Returns the empty list otherwise.
+   *
+   * Example:<pre>
+   * parse("""[{"name":"john","age":32}, {"name":"joe","age":23}]""") extractList { jv =>
+   *   val name = (jv \ "name").extract[String]
+   *   val age = (jv \ "age").extract[Int]
+   *   (name, age)
+   * } == List(("john", 32), ("joe", 23))</pre>
+   */
+  def extractList[A](f: JValue => A): List[A] = jv match {
+    case JArray(values) => values map f
+    case _ => List.empty
+  }
+
 }
 
