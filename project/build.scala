@@ -6,6 +6,7 @@ import com.typesafe.sbt.SbtStartScript
 import MimaSettings.mimaSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifacts
 import com.typesafe.sbt.JavaVersionCheckPlugin.autoImport._
+import org.scalajs.sbtplugin.cross.CrossProject
 
 object build extends Build {
   import Dependencies._
@@ -64,8 +65,7 @@ object build extends Build {
       }
     },
     manifestSetting,
-    resolvers ++= Seq(Opts.resolver.sonatypeSnapshots, Opts.resolver.sonatypeReleases),
-    crossVersion := CrossVersion.binary
+    resolvers ++= Seq(Opts.resolver.sonatypeSnapshots, Opts.resolver.sonatypeReleases)
   ) ++ mimaSettings
 
   val noPublish = Seq(
@@ -79,17 +79,22 @@ object build extends Build {
     id = "json4s",
     base = file("."),
     settings = json4sSettings ++ noPublish
-  ) aggregate(core, native, json4sExt, jacksonSupport, scalazExt, json4sTests, mongo, ast, scalap, examples, benchmark)
+  ) aggregate(core, native, json4sExt, jacksonSupport, scalazExt, json4sTests, mongo, ast, astJS, scalap, examples, benchmark)
 
-  lazy val ast = Project(
-    id = "json4s-ast",
-    base = file("ast"),
-    settings = json4sSettings ++ buildInfoSettings ++ Seq(
-      sourceGenerators in Compile <+= buildInfo,
-      buildInfoKeys := Seq[BuildInfoKey](name, organization, version, scalaVersion, sbtVersion),
-      buildInfoPackage := "org.json4s"
+  lazy val astBase = CrossProject.crossProject.in(file("ast"))
+    .settings(
+      json4sSettings ++ buildInfoSettings ++ Seq(
+        name := "json4s-ast",
+        sourceGenerators in Compile <+= buildInfo,
+        buildInfoKeys := Seq[BuildInfoKey](name, organization, version, scalaVersion, sbtVersion),
+        buildInfoPackage := "org.json4s"
+      ):_*
     )
-  )
+    .jvmConfigure(_.copy(id = "json4s-ast"))
+    .jsConfigure(_.copy(id = "json4s-astJS"))
+
+  lazy val ast = astBase.jvm
+  lazy val astJS = astBase.js
 
   lazy val scalap = Project(
     id = "json4s-scalap",
